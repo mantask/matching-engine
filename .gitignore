@@ -16,4 +16,4 @@ log/
 target/
 
 Orders.txt
-Trades.txt
+Trades*.txt

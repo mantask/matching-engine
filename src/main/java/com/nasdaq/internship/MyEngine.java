@@ -1,37 +1,64 @@
 package com.nasdaq.internship;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 class MyEngine implements MatchingEngine {
-    MyEngine() {
+
+    private final OrderBook buyOrderBook = OrderBook.buildBuyOrderBook();
+
+    private final OrderBook sellOrderBook = OrderBook.buildSellOrderBook();
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    @Override
+    public List<Trade> enterOrder(final Order newOrder) {
+        List<Trade> trades = new ArrayList<>();
+        tradeMatching(newOrder, trades);
+        return trades;
     }
 
-    public List<Trade> enterOrder(Order orderNew){
-        List<Trade> trades = new ArrayList<>();
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        //Place your implementation here
+    private void tradeMatching(final Order newOrder, final List<Trade> trades) {
+        Order matchingOrder = getOppositeOrderBook(newOrder).match(newOrder);
+        if (matchingOrder != null) {
+            Trade trade = trade(newOrder, matchingOrder);
+            trades.add(trade);
 
-        //An example:
+            if (isFilled(matchingOrder, trade)) {
+                getOrderBook(matchingOrder).remove(matchingOrder);
+            } else {
+                matchingOrder.decrease(trade.getQuantity());
+            }
 
-        //Constructing a fake opposite matching order for demo purposes only
-        //In the real implementation an opposite matching order should be identified among the orders entered already
-        Order orderOppposite = new Order(orderNew.getClient() +
-                "_Opposite " + orderNew.getSide().getOppositeSide() + " " +
-                orderNew.getStock() + " " +
-                Environment.decimalFormat.format(orderNew.getQuantity()) + "@" +
-                Environment.decimalFormat.format(orderNew.getPrice()));
+            if (!isFilled(newOrder, trade)) {
+                newOrder.decrease(trade.getQuantity());
+                tradeMatching(newOrder, trades);
+            }
 
-        //Constructing a new trade from (orderSell, orderBuy....)
-        Trade tradeNew;
-        if (orderNew.getSide() == Side.SELL) {
-            tradeNew = new Trade(orderNew, orderOppposite, orderNew.getQuantity(), orderNew.getPrice());
-        }else{
-            tradeNew = new Trade(orderOppposite, orderNew, orderNew.getQuantity(), orderNew.getPrice());
+        } else {
+            getOrderBook(newOrder).add(newOrder);
         }
+    }
 
-        //Adding a new trade
-        trades.add(tradeNew);
+    private OrderBook getOrderBook(final Order newOrder) {
+        return (newOrder.getSide() == Side.BUY) ? buyOrderBook : sellOrderBook;
+    }
 
-        return trades;
+    private OrderBook getOppositeOrderBook(final Order newOrder) {
+        return (newOrder.getSide() == Side.BUY) ? sellOrderBook : buyOrderBook;
+    }
+
+    private boolean isFilled(final Order order, final Trade trade) {
+        return order.getQuantity().compareTo(trade.getQuantity()) == 0;
+    }
+
+    private Trade trade(final Order newOrder, final Order matchingOrder) {
+        return new Trade(
+                newOrder.getSide() == Side.SELL ? newOrder : matchingOrder,
+                newOrder.getSide() == Side.BUY ? newOrder : matchingOrder,
+                newOrder.getQuantity().min( matchingOrder.getQuantity() ),
+                matchingOrder.getPrice()); // "limit order" always trades at the order book price
     }
 }
