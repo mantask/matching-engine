@@ -63,7 +63,7 @@ public class MyEngineTests {
         enterOrderAndAssertTrades("Bank1 BUY NDAQ 30@68.70");
         enterOrderAndAssertTrades("Bank2 BUY NDAQ 30@68.71");
         enterOrderAndAssertTrades("Bank3 BUY NDAQ 30@68.72");
-        enterOrderAndAssertTrades("Broker1 SELL NDAQ 90@68.70",
+        enterOrderAndAssertTrades("Broker1 SELL NDAQ 100@68.70",
                 "Broker1 -> Bank3 NDAQ 30@68.72",
                 "Broker1 -> Bank2 NDAQ 30@68.71",
                 "Broker1 -> Bank1 NDAQ 30@68.70");
